@@ -1,0 +1,16 @@
+{
+  "name": "@praetor/sdk",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@praetor/spec": "workspace:*",
+    "@praetor/engine": "workspace:*",
+    "viem": "^2.21.0"
+  }
+}

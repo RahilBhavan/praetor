@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+coverage/
+contracts/out/
+contracts/cache/
+contracts/lib/
+traces/*.json
+!traces/.gitkeep
+
+# Personal/local Claude settings (never commit)
+.claude/settings.local.json
+
+# Internal strategy/positioning doc — kept local, not published.
+# Delete the next line to include it in the public repo.
+praetor-project-plan (1).md

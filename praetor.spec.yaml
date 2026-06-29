@@ -1,0 +1,51 @@
+# praetor.spec.yaml — example spec (validates against packages/spec/schema.json)
+# Addresses marked PLACEHOLDER are valid-format examples; replace before deploying.
+version: 1
+account: "0x1111111111111111111111111111111111111111"   # PLACEHOLDER agent smart account
+chain: base
+spec_hash: "auto"            # keccak256 of the canonicalized spec; committed on-chain
+
+# --- ON-CHAIN ENFORCED (revert) ---
+allowlist:
+  - protocol: UniswapV3Router
+    address: "0x2626664c2603336E57B271c5C0b26F421741e481"   # Base UniV3 SwapRouter02
+    functions: [exactInputSingle, exactInput]
+  - protocol: AaveV3Pool
+    address: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5"   # Base Aave v3 Pool
+    functions: [supply, withdraw]
+
+recipients:                   # for transfer-class calls (anti-spoofing)
+  allow:
+    - "0x2222222222222222222222222222222222222222"   # PLACEHOLDER treasury cold wallet
+    - "0x3333333333333333333333333333333333333333"   # PLACEHOLDER known counterparty
+
+limits:
+  per_tx_usd: 5000
+  rolling_24h_usd: 25000
+  max_slippage_bps: 50        # 0.50%; enforced as min-out on-chain
+
+rate:
+  max_tx_per_hour: 20
+
+circuit_breaker:
+  halt_on_drawdown_pct: 20    # global kill switch trips; all signing frozen
+
+# --- OFF-CHAIN ENFORCED (simulation-backed) ---
+invariants:
+  oracle_deviation_bps: 100   # exec price within 1% of reference (Chainlink)
+  reference:
+    source: chainlink
+    max_staleness_sec: 3600   # stale round => BLOCK
+  max_drawdown_pct: 15        # block if post-trade equity < -15% of high-water mark
+  max_exposure_pct:           # optional per-asset exposure caps
+    TOKEN: 30                 # no single non-stable position > 30% of portfolio
+  token_safety:
+    block_honeypot: true
+    require_mint_renounced: false
+    max_transfer_tax_bps: 100
+    block_blacklistable: true
+
+on_block:
+  action: feedback            # return structured reason so the agent can adapt
+  log: true
+  feedback_verbosity: structured   # {code, human_reason, offending_field, suggested_fix}

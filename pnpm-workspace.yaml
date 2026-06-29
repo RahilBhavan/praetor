@@ -1,0 +1,12 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+
+allowBuilds:
+  esbuild: set this to true or false
+
+# pnpm 11: build-script allowlist + don't block `pnpm run` on the withheld-build
+# warning (esbuild runs fine from its prebuilt platform package without postinstall).
+onlyBuiltDependencies:
+  - esbuild
+verifyDepsBeforeRun: false
