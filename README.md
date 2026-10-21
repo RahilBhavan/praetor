@@ -88,6 +88,6 @@ forge script script/RevertDemo.s.sol -vv
 
 ## License
 
-No license file yet. The Solidity sources carry `SPDX-License-Identifier: MIT` headers.
+[MIT](LICENSE), matching the `SPDX-License-Identifier: MIT` headers in the Solidity sources.
 
 Part of [Rahil Bhavan's projects](https://github.com/RahilBhavan).
