@@ -15,5 +15,6 @@ Use **ZeroDev Kernel (ERC-4337 + ERC-7579)** as the sole account standard.
 ## Consequences
 - Cleanest session-key + modular validator/hook ergonomics for the guard.
 - Direct path to Phase 5 distribution via the Rhinestone ERC-7579 module registry.
-- The guard is implemented as an ERC-7579 hook/validator module.
+- The guard is implemented as an ERC-7579 hook/validator module. (Not yet at HEAD: the Phase 1
+  guard is standalone and the hook wrapper is deferred. See ADR-0004.)
 - Do NOT generalize across Safe / EIP-7702 for the MVP.

@@ -1,5 +1,10 @@
 # Praetor Threat Model
 
+> Status at HEAD: only the on-chain rows (2, 4, 5, 7) have code, in the standalone
+> `contracts/src/PraetorGuard.sol`. The off-chain rows (1, 3, 6) and the engine-driven kill
+> switch describe the design. `packages/engine` is a stub. The plan cited as "plan §…" is
+> not in this repository.
+>
 > Phase 0 deliverable (plan §3.2, §19.1). One page mapping each attack class an
 > autonomous funds-controlling agent faces → the Praetor check that stops it,
 > the enforcement layer, and the assertion that proves the block.
@@ -28,7 +33,7 @@
 | 2 | **Indirect prompt injection → drain** | Malicious instruction embedded in tool output (token metadata, webpage, email) redirects funds to an attacker address. | Allowlist (target+selector) + recipient allowlist | On-chain (+ off-chain pre-check) | Recipient ∉ `recipients.allow`, or `(target, selector) ∉ allowlist` ⇒ revert, regardless of LLM intent. |
 | 3 | **Malicious token (honeypot / taxed)** | Agent induced to buy a token that cannot be sold, or carries a confiscatory transfer tax / blacklist / mint authority. | Token-safety screen (simulated buy→sell), **fully local fork-sim** (ADR-0003) | Off-chain | In-fork buy then sell: sell reverts (honeypot) ⇒ BLOCK; effective tax bps `> max_transfer_tax_bps` ⇒ BLOCK; blacklist/mint heuristics per spec flags. |
 | 4 | **Loop / runaway drain** | Hallucinated or hijacked control loop issues rapid repeated withdrawals. | Rate limit + rolling 24h cap + circuit breaker | On-chain | `(max_tx_per_hour + 1)`-th tx in the hour bucket reverts; cumulative notional `> rolling_24h_usd` reverts; while `halted`, every `check()` reverts. |
-| 5 | **Excess slippage / sandwich bait** | Order placed with tolerance wide enough to be profitably sandwiched. | Slippage bound (min-out) | On-chain | `minOut = quotedOut × (10000 − max_slippage_bps) / 10000`; executed swap with `actualOut < minOut` reverts. |
+| 5 | **Excess slippage / sandwich bait** | Order placed with tolerance wide enough to be profitably sandwiched. | Slippage bound (min-out) | On-chain | `minOut < quotedOut − quotedOut × max_slippage_bps / 10000` ⇒ revert (`SlippageTooLoose`). The router then enforces `actualOut ≥ minOut`. |
 | 6 | **Portfolio blowup** (in-spec trades, bad aggregate) | A sequence of individually-in-spec trades walks portfolio equity past the drawdown limit. | Drawdown / exposure invariant | Off-chain | Post-trade equity simulated against high-water mark: `post_equity < hwm × (1 − max_drawdown_pct/100)` ⇒ BLOCK; per-asset `position_value_i / post_equity > max_exposure_pct_i / 100` ⇒ BLOCK. Breach of `halt_on_drawdown_pct` trips the on-chain kill switch. |
 | 7 | **Recipient / contract spoofing** | Funds routed to a look-alike contract or attacker address. | Recipient allowlist for transfer-class calls | On-chain | Transfer target ∉ `recipients.allow` ⇒ revert. |
 
@@ -54,7 +59,8 @@ check); `quotedOut==0` = non-swap (skip slippage). These are **deliberate gaps i
 standalone layer**, closed by the deferred ERC-7579 hook, which decodes real calldata and
 prices via `ChainlinkPriceAdapter`, so the *account* (not a compromised agent) supplies the
 inputs. Do not over-claim in the demo: the standalone guard proves enforcement **given honest
-inputs** — the Foundry invariant suite (plan §11.1) asserts, over 256×8192 fuzzed calls:
+inputs** — the Foundry invariant suite (plan §11.1) asserts, over 256 runs of depth 32
+(8,192 fuzzed calls in total, per `contracts/foundry.toml`):
 
 - out-of-allowlist `(target, selector)` or non-allowlisted recipient ⇒ never executes (rows 2, 7);
 - every executed call had `valueUsd ≤ per_tx_usd`, and Σ over any trailing 24h ≤ `rolling_24h_usd` (row 4);
