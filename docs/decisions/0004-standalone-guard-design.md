@@ -42,8 +42,9 @@ configure a guard with no setters. The guard therefore has owner-only `setPolicy
 `setAllowed`, `setRecipient`, `setAccount`, `setHalted` + single-step `transferOwnership`
 (rejects `address(0)`; **no `renounceOwnership`** — the kill switch must never be brick-able).
 
-`specHash` honesty is kept off-chain: CI cross-checks the on-chain `specHash` against
-`keccak256(canonicalized praetor.spec.yaml)`. **Upgrade path (deferred):** gate config setters
+`specHash` honesty is meant to be kept off-chain: a planned CI check compares the on-chain
+`specHash` with `keccak256(canonicalized praetor.spec.yaml)`. This check is not built yet: the
+repository has no CI workflow, and `compile()` in `packages/spec/src/compile.ts` is a stub. **Upgrade path (deferred):** gate config setters
 behind `halted` (halt → reconfigure → commit → unhalt) for a hard on-chain spec commitment.
 
 ### 3. `check()` is restricted to one owner-set `account` (`onlyAccount`)
@@ -60,7 +61,9 @@ sets it to the agent smart account; tests set it to the handler.
   is the TS mirror, not an on-chain `staticcall`.
 - Rolling-24h is a **true sliding window** (fixed ring buffer `N=512`, O(1) running sum, evict
   when `now−ts > WINDOW`), not a fixed 24h bucket (which would allow 2× the cap across a
-  boundary). `setPolicy` enforces `maxTxPerHour*24 <= N`, making `RollingBufferFull` unreachable.
+  boundary). `setPolicy` enforces `maxTxPerHour*25 <= N`, making `RollingBufferFull` unreachable.
+  A sliding 24h window touches up to 25 fixed hour buckets, so the bound is 25, not 24
+  (see `setPolicy` in `contracts/src/PraetorGuard.sol`).
 
 ## Consequences / trust boundary
 
